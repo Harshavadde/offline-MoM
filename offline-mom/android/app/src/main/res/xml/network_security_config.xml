@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Phase 4B: makes this app's zero-transmission privacy posture (NFR-17,
+  docs/v2/17-privacy.md) an explicit, auditable platform declaration rather
+  than something only true by omission. `targetSdk 36` already blocks
+  cleartext HTTP for this app by Android's own default (API 28+), so this
+  doesn't change runtime behavior today - it pins that behavior so it can't
+  silently regress if `targetSdk` is ever lowered, and gives anyone
+  reviewing this app's Play Store listing (or its source) one file that
+  states the constraint directly, matching AndroidManifest.xml's own
+  INTERNET-permission comment explaining the one legitimate network use
+  (one-time AI model downloads over HTTPS).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

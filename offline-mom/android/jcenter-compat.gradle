@@ -1,0 +1,39 @@
+// Release-blocker fix (B1): restores `jcenter()` as a callable repository
+// declaration for any legacy plugin whose OWN bundled android/build.gradle
+// still calls it - specifically flutter_tesseract_ocr-0.4.31
+// (io.paratoner.flutter_tesseract_ocr), whose buildscript{} block still
+// declares `repositories { google(); jcenter() }` from an old (~2019-2020)
+// Flutter plugin template.
+//
+// Root cause, verified by direct inspection (not assumed) before writing
+// this file - see R-48, docs/v2/implementation/04-risk-register.md:
+//   - Gradle 9.1.0 (this project's pinned wrapper version,
+//     android/gradle/wrapper/gradle-wrapper.properties) removed the
+//     `jcenter()` DSL method from `RepositoryHandler` entirely - not
+//     merely deprecated, genuinely absent - producing the observed
+//     "Could not find method jcenter()" MissingMethodException.
+//   - `jcenter()` is NOT load-bearing for anything this plugin actually
+//     needs. Its one real native dependency - tesseract4android-release.aar
+//     - ships bundled *inside the plugin's own package*
+//     (android/libs/tesseract4android-release.aar) and resolves via a
+//     local `flatDir` repository the plugin declares separately, never
+//     touching JCenter, Bintray, or any remote repository at all. The only
+//     thing that ever calls `jcenter()` is the plugin's own vestigial
+//     `buildscript { classpath 'com.android.tools.build:gradle:7.1.2' }`
+//     declaration - already superseded in practice by this project's own
+//     root-level AGP version pin (android/settings.gradle.kts, AGP
+//     8.9.2 via the modern `plugins {}` block), and in any case AGP itself
+//     has always been published to `google()` (already the first, and
+//     genuinely sufficient, repository in that same block) - never
+//     JCenter-exclusively.
+//
+// This is a project-level compatibility shim, not a patch to the plugin's
+// own cached files: it makes the plugin's existing, unmodified
+// `jcenter()` call resolve harmlessly to mavenCentral() (HTTPS, actively
+// maintained, already used elsewhere in this project) instead of failing
+// to parse at all. It changes nothing about what gets resolved from
+// where - `google()` was already sufficient for the one real dependency
+// this redirect could ever be asked to serve.
+org.gradle.api.artifacts.dsl.RepositoryHandler.metaClass.jcenter = { ->
+    delegate.mavenCentral()
+}

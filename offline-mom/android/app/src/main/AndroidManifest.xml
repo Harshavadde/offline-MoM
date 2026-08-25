@@ -1,0 +1,104 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <!-- Debug/profile builds get this injected automatically by Flutter's
+         own tooling (android/app/src/debug|profile/AndroidManifest.xml,
+         for hot reload/DevTools), which is why this was never missed in
+         all prior debug-build testing - release builds get no such
+         overlay, so without it here explicitly the release APK has zero
+         network access at all. Needed for the one-time whisper/LLM model
+         downloads on first use - see WhisperSpeechToTextEngine and
+         LlamaDartLlmEngine's doc comments for why that's still consistent
+         with "fully offline" (a one-time asset fetch, not a runtime
+         dependency; every actual transcription/summary after the first
+         run is 100% local). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Used only if the user opts in to "keep downloading AI models in the
+         background" (Settings/onboarding) - see BackgroundDownloadService.
+         FOREGROUND_SERVICE_DATA_SYNC is required on Android 14+ to declare
+         what kind of foreground service this is; POST_NOTIFICATIONS is
+         required on Android 13+ for the service's persistent notification
+         to actually show. Neither has any effect unless the user has
+         opted in and a download is genuinely in progress. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- V2 product-completion fix: RecordingForegroundService (real
+         product bug - recording could not survive the screen turning off
+         or the device locking, since Android forbids background
+         microphone access without an active foreground service of type
+         "microphone" specifically, required on API 34+). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <!-- Student Toolkit (V2 Phase 5A) - `image_picker`'s camera-capture
+         path only; gallery picking uses the system photo picker, which
+         needs no storage/media permission on Android 13+ and is handled by
+         `image_picker` itself on older versions. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- allowBackup="false" (Phase 4B) - this app's entire pitch is that
+         meeting/document/chat content never leaves the device (NFR-17,
+         docs/v2/17-privacy.md); Android's default (allowBackup omitted,
+         i.e. true) would otherwise fold the local sqlite database into
+         Android's own Auto Backup / `adb backup` for the sake of a
+         convenience (restoring a new device's app data) this app never
+         claims to offer, and Backup/Restore already has its own explicit,
+         user-initiated, user-controlled path (Settings > Backup) that this
+         doesn't affect. -->
+    <application
+        android:label="OfflineMoMAI"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- flutter_foreground_task's service - used when the user opts in
+             to background AI model downloads ("dataSync") and, always,
+             while a meeting is actively being recorded ("microphone", so
+             recording can survive the screen turning off/device locking -
+             see RecordingForegroundService). One underlying Android
+             service backs both features (the plugin runs only one at a
+             time; see RecordingForegroundService's own doc comment).
+             Warning (per the plugin's own docs): do not change this
+             service name. -->
+        <service
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="dataSync|microphone"
+            android:exported="false"/>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>
