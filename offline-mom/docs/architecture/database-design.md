@@ -32,6 +32,12 @@ Fifteen tables have real relational structure and are queried with filters, so t
 
 A fresh install runs all fifteen migrations in sequence (`AppDatabase.open`), so it never ends up on an intermediate schema.
 
+> **Note:** this table is not kept in sync with every migration past v15 — see `lib/database/migrations/` for the authoritative current list (through v22 as of this note). One relevant later addition, documented here since it's this pass's own change:
+>
+> | Version | Adds | Why |
+> |---|---|---|
+> | v22 | `project_blocks.status` (nullable `TEXT`, `ProjectBlockStatus.planned`/`.completed`) | AI-Tailored Resume from Job Description (R-12) - structural (not just wording) enforcement that an AI-suggested project idea never silently becomes a claimed-completed project. Set explicitly by which of the review screen's two confirm actions the user took; `null` for every pre-existing row and every project added through the normal Project Block Editor. |
+
 ## ER diagram
 
 ```mermaid

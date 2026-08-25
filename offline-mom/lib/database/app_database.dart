@@ -26,6 +26,7 @@ import 'migrations/v18.dart';
 import 'migrations/v19.dart';
 import 'migrations/v20.dart';
 import 'migrations/v21.dart';
+import 'migrations/v22.dart';
 
 /// If a database file exists at [legacyPath] but not yet at [newPath],
 /// copies it across - a device that already has a database from before
@@ -144,6 +145,7 @@ class AppDatabase {
           await migrateV18ToV19(db);
           await migrateV19ToV20(db);
           await migrateV20ToV21(db);
+          await migrateV21ToV22(db);
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) await migrateV1ToV2(db);
@@ -166,6 +168,7 @@ class AppDatabase {
           if (oldVersion < 19) await migrateV18ToV19(db);
           if (oldVersion < 20) await migrateV19ToV20(db);
           if (oldVersion < 21) await migrateV20ToV21(db);
+          if (oldVersion < 22) await migrateV21ToV22(db);
         },
       ),
     );

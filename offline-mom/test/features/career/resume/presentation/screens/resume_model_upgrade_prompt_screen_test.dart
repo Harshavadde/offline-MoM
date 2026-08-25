@@ -159,6 +159,15 @@ void main() {
         const AppSettings(hasSeenResumeModelUpgradePrompt: true),
       );
 
+      // flutter_test's default surface (800x600) is shorter than any real
+      // phone in portrait - too short to fit all three of this screen's
+      // stacked promotional cards (My Profile / Beginner Resume / Create
+      // Resume for a Job, R-12) above the empty-state content without
+      // overflowing, a test-viewport artifact rather than a real-device bug.
+      // Mirrors beginner_resume_screen_test.dart's own identical fix.
+      await tester.binding.setSurfaceSize(const Size(412, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.runAsync(() async {
         await tester.pumpWidget(
           ProviderScope(

@@ -127,6 +127,8 @@ flowchart TD
 
 Defined in `lib/core/router/route_paths.dart` (path constants) and `lib/core/router/app_router.dart` (the `GoRouter` config). Every route above is exercised by the route-graph smoke test in `test/widget_test.dart`.
 
+> **Note:** the Career/Resume Builder routes (`/resume/...`, `/jd/...`) predate this table's own last sync and aren't listed above - see `route_paths.dart`'s "Career - Resume Builder" block for the authoritative current list. One relevant addition, documented here since it's this pass's own change: **Create Resume for a Job** (`/resume/jd-tailored`, `JdTailoredResumeScreen`) - reached from a new card on the Resume list screen, alongside "My Profile"/"Create a Beginner Resume." Fills basic details + a JD, reviews an AI-proposed summary/skills/project-ideas, then hands off into the *existing* Template Gallery (`/resume/:resumeId/templates`) and Resume Editor unchanged - no new terminal screens.
+
 ## Bottom navigation shell (`AppShell`)
 
 Only four destinations sit in the persistent bottom nav — Home, History, Search, Settings — plus a docked center `FloatingActionButton` that always jumps to `/record`, regardless of which tab is active. Every content-type detail screen (Documents, Chat, Student Toolkit, and every screen within them) is a pushed route reachable from Home or from a "Chat about this" / "Import" action, not a fifth/sixth bottom-nav tab. This is a deliberate design decision (ADR-014): the same primary action should not appear in more than one place in the nav chrome.

@@ -120,6 +120,13 @@ class _ResumeListScreenState extends ConsumerState<ResumeListScreen> {
           // Description" (R-7) is (an R-8 audit finding this deliberately
           // avoids repeating).
           _BeginnerResumeCard(onTap: () => context.push(RoutePaths.resumeBeginner)),
+          // AI-Tailored Resume from Job Description - same prominent,
+          // full-width card treatment as _MyProfileCard/_BeginnerResumeCard
+          // above, deliberately not buried in the "Job description tools"
+          // popup menu (which stays untouched) - see this screen's own
+          // R-8/R-10 comment on why that menu is a known discoverability
+          // gap this new card avoids repeating.
+          _JdTailoredResumeCard(onTap: () => context.push(RoutePaths.resumeJdTailored)),
           Expanded(
             child: resumesAsync.when(
               loading: () => const Padding(
@@ -234,6 +241,46 @@ class _BeginnerResumeCard extends StatelessWidget {
             style: TextStyle(color: scheme.onTertiaryContainer),
           ),
           trailing: Icon(Icons.chevron_right_rounded, color: scheme.onTertiaryContainer),
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+}
+
+/// "Create Resume for a Job" (AI-Tailored Resume from Job Description) -
+/// fills basic details, pastes/imports a JD, then reviews an AI-proposed
+/// summary/skills/project-ideas before any resume is created. Same card
+/// treatment/prominence as [_BeginnerResumeCard] directly above it, its own
+/// icon+color so the three stacked cards (Profile/Beginner/JD-tailored)
+/// stay visually distinct from one another.
+class _JdTailoredResumeCard extends StatelessWidget {
+  const _JdTailoredResumeCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Card(
+        margin: EdgeInsets.zero,
+        color: scheme.secondaryContainer,
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: scheme.secondary,
+            child: Icon(Icons.work_history_outlined, color: scheme.onSecondary),
+          ),
+          title: Text(
+            'Create Resume for a Job',
+            style: TextStyle(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            "Enter a job description and we'll help tailor your resume for it.",
+            style: TextStyle(color: scheme.onSecondaryContainer),
+          ),
+          trailing: Icon(Icons.chevron_right_rounded, color: scheme.onSecondaryContainer),
           onTap: onTap,
         ),
       ),
