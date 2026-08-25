@@ -13,7 +13,7 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   static const String sqliteDbName = 'offline_mom.db';
-  static const int sqliteDbVersion = 21;
+  static const int sqliteDbVersion = 22;
 
   static const String hiveSettingsBoxName = 'settings_box';
 

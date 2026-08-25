@@ -144,3 +144,73 @@ flowchart TB
 - **Meetings:** `ProcessNewMeetingUseCase` chains `TranscribeMeetingUseCase` → `GenerateMeetingSummaryUseCase` → `MeetingIndexer` (chunks + embeds the transcript, summary, and each note), run unawaited in the background so the UI never blocks. See [`lld.md`](lld.md) for the sequence diagram.
 - **Documents:** `ProcessNewDocumentUseCase` chains `ExtractDocumentTextUseCase` → `SummarizeDocumentUseCase` → `DocumentIndexer`, the same staged-visibility pattern — a document is searchable via FTS5 as soon as extraction finishes, chat-able only once indexing/embedding also finishes.
 - Both indexers share `IndexingService`/`ChunkingService` — one chunking/embedding implementation for both content types, not two.
+
+## Resume tailoring: bounded rewrite and generation calls (R-9, R-12)
+
+Every AI touchpoint in the Career/Resume feature is a small, single-purpose `LlmEngine.generateFromPrompt` call submitted through the same `LlmRequestQueue` as every other AI feature in this app (single in-flight generation, ADR-008) — never a second engine, never a long free-running conversation. Each follows the same shape: a pure, stateless prompt-builder class produces `{systemPrompt, userPrompt}` bounded to an explicit, narrow set of facts; the call is wrapped in `try`/`catch` with no retry, degrading to a safe default (never a thrown error, never a fabricated fallback) on any failure.
+
+- **`GenerateResumeSuggestionsUseCase`** (R-9, `lib/features/career/analysis/`) — one bounded bullet-rewrite call per resume entry that already has a `MatchLevel.partial` match against a JD requirement (`ResumeSuggestionPromptBuilder`). Result is persisted as a `pending` `SuggestedEdit`, never auto-applied — `AcceptSuggestedEditUseCase`/`RejectSuggestedEditUseCase` are the only code paths that ever merge AI text into a live block.
+- **`GenerateJdTailoredDraftUseCase`** (R-12, `lib/features/career/resume/`) — the AI-Tailored-Resume-from-JD feature's generation step, run once when the user reaches its wizard's Review screen, before any `Resume` row exists:
+  - One call for the **professional summary** (`JdTailoredResumeSummaryPromptBuilder`) — grounded strictly in the target role/confirmed skills/education/experience/existing-projects the user already entered in this same wizard, never the JD's raw text. Falls back to a small deterministic sentence (mirrors R-10's `buildBeginnerResumeSummary`) if the model is unavailable or returns nothing usable.
+  - Up to 3 calls for **project ideas** (`ProjectIdeaPromptBuilder`) — explicitly framed as ideas, never claims of completed work. A deterministic regex check on the raw output (`built|developed|created|completed|delivered|shipped|launched|implemented|deployed`) discards any idea whose wording leaks completed-tense phrasing, before it's ever shown to the user.
+  - **Skill recommendations are deliberately NOT an LLM call at all** — `JdSkillRecommendationService` reuses the existing, purely deterministic `ResumeJdAnalyzer` (see "Hybrid Retrieval Engine" section's sibling, JD analysis is not retrieval-based) to diff the JD's requirements against the user's confirmed skills. This is the single biggest fabrication-risk reduction in the feature: an LLM has no opportunity to assert a skill the user never entered.
+
+### AI recommendation vs. user-confirmed data — the confirmation gate every resume-tailoring feature shares
+
+```
+User-confirmed data (typed by the user)
+        |
+        v
+   Resume / ResumeBlock (persisted immediately, as entered)
+
+AI recommendations (skills, project ideas, bullet rewrites)
+        |
+        v
+   Shown to the user, clearly labeled as a suggestion
+        |
+        v
+   Explicit user action required (accept a chip / "Add as Planned Project" /
+   accept a SuggestedEdit) - editing the suggested text further is allowed
+   and encouraged, not just a yes/no gate
+        |
+        v
+   Resume / ResumeBlock (only now persisted)
+```
+
+No AI recommendation in this app has a code path that reaches a persisted `Resume`/block without passing through this gate — `SuggestedEdit`'s `pending` status (R-9) and `JdTailoredResumeInput.confirmedSkills`/`projectEntries` only ever containing what the review screen's local state recorded as accepted (R-12) are the two concrete implementations of the same rule.
+
+### End-to-end flow: AI-Tailored Resume from Job Description (R-12)
+
+```
+User
+ |
+ v
+Basic Resume Details (name, education, own skills, own experience/projects)
+ |
+ v
+Job Description (pasted or imported)
+ |
+ v
+JD Parser (JdParser - deterministic, no AI)
+ |
+ v
+JD Analysis (JdSkillRecommendationService -> ResumeJdAnalyzer - deterministic, no AI)
+ |
+ v
+AI Resume Generator (GenerateJdTailoredDraftUseCase - bounded LLM calls: summary, project ideas)
+ |
+ v
+Fabrication / Safety Validation (completed-tense rejection regex; recommendations start unaccepted)
+ |
+ v
+User Review (confirm/reject skills, edit summary, confirm/edit-and-add project ideas)
+ |
+ v
+Resume Model (CreateJdTailoredResumeUseCase - normal Resume + ResumeBlockRef rows)
+ |
+ v
+Template Renderer (existing ResumeCompilerService + ResumeTemplateRenderer, unmodified)
+ |
+ v
+PDF Export (existing export pipeline, unmodified)
+```

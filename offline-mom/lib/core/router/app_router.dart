@@ -6,6 +6,7 @@ import '../../features/career/analysis/presentation/screens/resume_jd_analysis_s
 import '../../features/career/jd/presentation/screens/jd_import_screen.dart';
 import '../../features/career/jd/presentation/screens/jd_to_resume_screen.dart';
 import '../../features/career/resume/presentation/screens/beginner_resume_screen.dart';
+import '../../features/career/resume/presentation/screens/jd_tailored_resume_screen.dart';
 import '../../features/career/resume/presentation/screens/beginner_resume_template_screen.dart';
 import '../../features/career/resume/presentation/screens/certification_block_editor_screen.dart';
 import '../../features/career/resume/presentation/screens/education_block_editor_screen.dart';
@@ -341,6 +342,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: RoutePaths.resumeBeginnerTemplate,
       builder: (context, state) => BeginnerResumeTemplateScreen(resumeId: _resumeIdFrom(state)),
+    ),
+    // AI-Tailored Resume from Job Description - registered before
+    // resumeEditor (":resumeId") for the same reason as
+    // resumeImport/resumeCreateFromProfile/resumeBeginner.
+    GoRoute(
+      path: RoutePaths.resumeJdTailored,
+      builder: (context, state) => const JdTailoredResumeScreen(),
     ),
     GoRoute(
       path: RoutePaths.resumeVersionPreview,

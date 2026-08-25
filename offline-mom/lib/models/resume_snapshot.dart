@@ -1,4 +1,5 @@
 import 'experience_block.dart' show ExperienceSubProject;
+import 'project_block.dart' show ProjectBlockStatus;
 import 'resume_link.dart';
 import 'skill_entry.dart';
 
@@ -482,6 +483,7 @@ class ResolvedProjectEntry {
     required this.name,
     this.link,
     this.bullets = const [],
+    this.status,
   });
 
   /// The originating `ProjectBlock.id` - reference only.
@@ -491,16 +493,24 @@ class ResolvedProjectEntry {
   final String? link;
   final List<String> bullets;
 
+  /// Threaded straight through from `ProjectBlock.status` (migration v22) -
+  /// null for any project with no planned/completed opinion. No template
+  /// renderer currently reads this; it's available for a future "Planned"
+  /// badge without a further migration.
+  final ProjectBlockStatus? status;
+
   ResolvedProjectEntry copyWith({
     String? name,
     String? link,
     List<String>? bullets,
+    ProjectBlockStatus? status,
   }) {
     return ResolvedProjectEntry(
       sourceBlockId: sourceBlockId,
       name: name ?? this.name,
       link: link ?? this.link,
       bullets: bullets ?? this.bullets,
+      status: status ?? this.status,
     );
   }
 
@@ -510,6 +520,7 @@ class ResolvedProjectEntry {
       'name': name,
       'link': link,
       'bullets': bullets,
+      'status': status?.name,
     };
   }
 
@@ -519,6 +530,7 @@ class ResolvedProjectEntry {
       name: map['name'] as String,
       link: map['link'] as String?,
       bullets: (map['bullets'] as List).cast<String>(),
+      status: ProjectBlockStatus.fromName(map['status'] as String?),
     );
   }
 
@@ -534,12 +546,13 @@ class ResolvedProjectEntry {
         other.sourceBlockId == sourceBlockId &&
         other.name == name &&
         other.link == link &&
+        other.status == status &&
         _listEquals(other.bullets, bullets);
   }
 
   @override
   int get hashCode =>
-      Object.hash(sourceBlockId, name, link, Object.hashAll(bullets));
+      Object.hash(sourceBlockId, name, link, status, Object.hashAll(bullets));
 }
 
 /// One resolved Certification entry inside a [ResumeSnapshot].

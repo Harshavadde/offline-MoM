@@ -122,6 +122,7 @@ class ResumeCompilerService {
             name: block.name,
             link: block.link,
             bullets: _resolveStringListOverride(block.bullets, ref.overrideJson),
+            status: block.status,
           ));
 
         case ResumeBlockType.certification:

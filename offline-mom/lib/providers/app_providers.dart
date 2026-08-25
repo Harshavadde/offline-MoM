@@ -74,11 +74,13 @@ import '../features/career/jd/create_resume_from_jd_use_case.dart';
 import '../features/career/jd/import_jd_use_case.dart';
 import '../features/career/resume/accept_suggested_edit_use_case.dart';
 import '../features/career/resume/create_beginner_resume_use_case.dart';
+import '../features/career/resume/create_jd_tailored_resume_use_case.dart';
 import '../features/career/resume/create_resume_from_profile_use_case.dart';
 import '../features/career/resume/delete_library_block_use_case.dart';
 import '../features/career/resume/delete_resume_use_case.dart';
 import '../features/career/resume/generate_bullet_rewrite_use_case.dart';
 import '../features/career/resume/generate_import_second_pass_use_case.dart';
+import '../features/career/resume/generate_jd_tailored_draft_use_case.dart';
 import '../features/career/resume/import_resume_use_case.dart';
 import '../features/career/resume/reject_suggested_edit_use_case.dart';
 import '../features/career/resume/save_resume_version_use_case.dart';
@@ -95,9 +97,12 @@ import '../repositories/skill_entry_repository.dart';
 import '../repositories/suggested_edit_repository.dart';
 import '../services/career/jd_import_file_picker_service.dart';
 import '../services/career/jd_parser.dart';
+import '../services/career/jd_skill_recommendation_service.dart';
 import '../services/career/resume_jd_analyzer.dart';
 import '../services/career/resume_jd_semantic_matcher.dart';
 import '../services/device/device_capability_service.dart';
+import '../services/resume/jd_tailored_summary_prompt_builder.dart';
+import '../services/resume/project_idea_prompt_builder.dart';
 import '../services/resume/resume_compiler_service.dart';
 import '../services/resume/resume_import_file_picker_service.dart';
 import '../services/resume/resume_import_parser.dart';
@@ -1060,6 +1065,49 @@ final createResumeFromJdUseCaseProvider = Provider<CreateResumeFromJdUseCase>((r
     resumeRepository: ref.watch(resumeRepositoryProvider),
     resumeBlockRepository: ref.watch(resumeBlockRepositoryProvider),
     createResumeFromProfileUseCase: ref.watch(createResumeFromProfileUseCaseProvider),
+  );
+});
+
+// AI-Tailored Resume from Job Description - a user fills in their own
+// basic details + a JD and reviews an AI-proposed summary/skills/project
+// ideas before any resume is created. Deliberately a standalone flow, not
+// a retrofit of createResumeFromJdUseCaseProvider above (which requires a
+// pre-existing "My Profile" and has no basic-details step of its own).
+
+/// Deterministic (no LLM) - reuses [resumeJdAnalyzerProvider] exactly like
+/// [analyzeResumeAgainstJdUseCaseProvider] already does.
+final jdSkillRecommendationServiceProvider = Provider<JdSkillRecommendationService>((ref) {
+  return JdSkillRecommendationService(analyzer: ref.watch(resumeJdAnalyzerProvider));
+});
+
+final jdTailoredResumeSummaryPromptBuilderProvider =
+    Provider<JdTailoredResumeSummaryPromptBuilder>((ref) {
+  return const JdTailoredResumeSummaryPromptBuilder();
+});
+
+final projectIdeaPromptBuilderProvider = Provider<ProjectIdeaPromptBuilder>((ref) {
+  return const ProjectIdeaPromptBuilder();
+});
+
+final generateJdTailoredDraftUseCaseProvider = Provider<GenerateJdTailoredDraftUseCase>((ref) {
+  return GenerateJdTailoredDraftUseCase(
+    skillRecommendationService: ref.watch(jdSkillRecommendationServiceProvider),
+    llmEngine: ref.watch(llmEngineProvider),
+    llmRequestQueue: ref.watch(llmRequestQueueProvider),
+    summaryPromptBuilder: ref.watch(jdTailoredResumeSummaryPromptBuilderProvider),
+    projectIdeaPromptBuilder: ref.watch(projectIdeaPromptBuilderProvider),
+  );
+});
+
+final createJdTailoredResumeUseCaseProvider = Provider<CreateJdTailoredResumeUseCase>((ref) {
+  return CreateJdTailoredResumeUseCase(
+    resumeRepository: ref.watch(resumeRepositoryProvider),
+    resumeBlockRepository: ref.watch(resumeBlockRepositoryProvider),
+    educationBlockRepository: ref.watch(educationBlockRepositoryProvider),
+    experienceBlockRepository: ref.watch(experienceBlockRepositoryProvider),
+    projectBlockRepository: ref.watch(projectBlockRepositoryProvider),
+    skillEntryRepository: ref.watch(skillEntryRepositoryProvider),
+    customSectionBlockRepository: ref.watch(customSectionBlockRepositoryProvider),
   );
 });
 

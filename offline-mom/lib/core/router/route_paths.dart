@@ -88,6 +88,10 @@ class RoutePaths {
   // R-10 (Beginner Resume flow) - also a static segment, registered before
   // resumeEditor for the same reason as resumeImport/resumeCreateFromProfile.
   static const resumeBeginner = '/resume/beginner';
+  // AI-Tailored Resume from Job Description - also a static segment,
+  // registered before resumeEditor for the same reason as
+  // resumeImport/resumeCreateFromProfile/resumeBeginner.
+  static const resumeJdTailored = '/resume/jd-tailored';
   static const resumeBeginnerTemplate = '/resume/:resumeId/beginner-template';
   static const resumeEditor = '/resume/:resumeId';
   static const resumePreview = '/resume/:resumeId/preview';

@@ -510,6 +510,10 @@ class ProjectBlocksTable {
 
   /// JSON-encoded ordered string list.
   static const bulletsJson = 'bullets_json';
+
+  /// Nullable (migration v22) - [ProjectBlockStatus.name] ("planned"/
+  /// "completed"), or absent/null for a row with no opinion either way.
+  static const status = 'status';
   static const createdAt = 'created_at';
   static const updatedAt = 'updated_at';
 }
